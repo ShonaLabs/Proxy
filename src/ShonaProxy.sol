@@ -9,16 +9,16 @@ import "./IAction.sol";
 contract ShonaProxy is Ownable {
     using EnumerableSet for EnumerableSet.AddressSet;
 
-    mapping(uint => uint) private _epochFees;
-    mapping(address => uint) private _userEarnings;
-    mapping(address => mapping(uint => uint)) private _userEpochFees;
+    mapping(uint256 => uint256) private _epochFees;
+    mapping(address => uint256) private _userEarnings;
+    mapping(address => mapping(uint256 => uint256)) private _userEpochFees;
     mapping(address => EnumerableSet.AddressSet) private _matchParticipants;
     EnumerableSet.AddressSet private _players;
     EnumerableSet.AddressSet private _executors;
     EnumerableSet.AddressSet private _claimants;
-    uint private _feeRate = 1000; // 10%
-    uint private _maxFee = 10000; // $0.01
-    uint private _minFee = 1000; // $0.001
+    uint256 private _feeRate = 1000; // 10%
+    uint256 private _maxFee = 10000; // $0.01
+    uint256 private _minFee = 1000; // $0.001
 
     IERC20 public constant ATLAS = IERC20(0x0b9F23645C9053BecD257f2De5FD961091112fb1);
 
@@ -39,47 +39,40 @@ contract ShonaProxy is Ownable {
         address indexed to,
         address indexed matchId,
         address action,
-        uint quantity,
-        uint fee,
-        uint timestamp
+        uint256 quantity,
+        uint256 fee,
+        uint256 timestamp
     );
 
     function batchSend(
-        address[] calldata froms, 
-        address[] calldata tos, 
-        address[] calldata matchIds, 
-        address[] calldata actions, 
-        uint[] calldata atlasAmounts,
+        address[] calldata froms,
+        address[] calldata tos,
+        address[] calldata matchIds,
+        address[] calldata actions,
+        uint256[] calldata atlasAmounts,
         bytes[] calldata data
     ) external onlyExecutor returns (bool[] memory) {
         bool[] memory success = new bool[](froms.length);
-        for (uint i = 0; i < froms.length; i++) {
+        for (uint256 i = 0; i < froms.length; i++) {
             success[i] = _send(froms[i], tos[i], matchIds[i], actions[i], atlasAmounts[i], data[i]);
         }
         return success;
     }
 
-    function send(
-        address from, 
-        address to, 
-        address matchId, 
-        address action, 
-        uint atlasAmount,
-        bytes calldata data
-    ) external onlyExecutor returns (bool) {
+    function send(address from, address to, address matchId, address action, uint256 atlasAmount, bytes calldata data)
+        external
+        onlyExecutor
+        returns (bool)
+    {
         return _send(from, to, matchId, action, atlasAmount, data);
     }
 
-    function _send(
-        address from, 
-        address to, 
-        address matchId, 
-        address action,
-        uint atlasAmount,
-        bytes calldata data
-    ) internal returns (bool) {
+    function _send(address from, address to, address matchId, address action, uint256 atlasAmount, bytes calldata data)
+        internal
+        returns (bool)
+    {
         bool isAction = action != address(0);
-        uint atlasFee = atlasAmount * _feeRate / 10000;
+        uint256 atlasFee = atlasAmount * _feeRate / 10000;
         if (atlasFee > _maxFee) {
             atlasFee = _maxFee;
         }
@@ -107,8 +100,7 @@ contract ShonaProxy is Ownable {
 
         // Process Action, if applicable
         if (action != address(0)) {
-            try IAction(action).onSend(from, to, matchId, atlasAmount, data) { }
-            catch { }
+            try IAction(action).onSend(from, to, matchId, atlasAmount, data) {} catch {}
         }
 
         // Process fee, if applicable
@@ -126,8 +118,8 @@ contract ShonaProxy is Ownable {
         return true;
     }
 
-    function _calculateFee(uint atlasAmount) internal view returns (uint) {
-        uint atlasFee = atlasAmount * _feeRate / 10000;
+    function _calculateFee(uint256 atlasAmount) internal view returns (uint256) {
+        uint256 atlasFee = atlasAmount * _feeRate / 10000;
         if (atlasFee > _maxFee) {
             atlasFee = _maxFee;
         }
@@ -137,37 +129,37 @@ contract ShonaProxy is Ownable {
         return atlasFee;
     }
 
-    function getEpoch(uint timestamp) public pure returns (uint) {
+    function getEpoch(uint256 timestamp) public pure returns (uint256) {
         return timestamp / 86400; // Epoch = 1 day
     }
 
-    function getCurrentEpoch() public view returns (uint) {
+    function getCurrentEpoch() public view returns (uint256) {
         return getEpoch(block.timestamp);
     }
 
-    function getFeeRate() external view returns (uint) {
+    function getFeeRate() external view returns (uint256) {
         return _feeRate;
     }
 
-    function getMaxFee() external view returns (uint) {
+    function getMaxFee() external view returns (uint256) {
         return _maxFee;
     }
 
-    function getMinFee() external view returns (uint) {
+    function getMinFee() external view returns (uint256) {
         return _minFee;
     }
 
-    function setFeeRate(uint feeRate) external onlyOwner {
+    function setFeeRate(uint256 feeRate) external onlyOwner {
         require(feeRate <= 2000, "Fee must be <= 20%");
         _feeRate = feeRate;
     }
 
-    function setMaxFee(uint maxFee) external onlyOwner {
+    function setMaxFee(uint256 maxFee) external onlyOwner {
         require(maxFee >= _minFee, "Max fee must equal or exceed min fee");
         _maxFee = maxFee;
     }
 
-    function setMinFee(uint minFee) external onlyOwner {
+    function setMinFee(uint256 minFee) external onlyOwner {
         require(minFee <= _maxFee, "Min fee can not exceed max fee");
         _minFee = minFee;
     }
@@ -175,12 +167,15 @@ contract ShonaProxy is Ownable {
     function getPlayers() external view returns (address[] memory) {
         return _players.values();
     }
-    function getPlayerAt(uint index) external view returns (address) {
+
+    function getPlayerAt(uint256 index) external view returns (address) {
         return _players.at(index);
     }
-    function getNumPlayers() external view returns (uint) {
+
+    function getNumPlayers() external view returns (uint256) {
         return _players.length();
     }
+
     function isPlayer(address user) external view returns (bool) {
         return _players.contains(user);
     }
@@ -188,65 +183,79 @@ contract ShonaProxy is Ownable {
     function getMatchParticipants(address matchId) external view returns (address[] memory) {
         return _matchParticipants[matchId].values();
     }
-    function getMatchParticipantAt(address matchId, uint index) external view returns (address) {
+
+    function getMatchParticipantAt(address matchId, uint256 index) external view returns (address) {
         return _matchParticipants[matchId].at(index);
     }
-    function getNumMatchParticipants(address matchId) external view returns (uint) {
+
+    function getNumMatchParticipants(address matchId) external view returns (uint256) {
         return _matchParticipants[matchId].length();
     }
+
     function isMatchParticipant(address matchId, address user) external view returns (bool) {
         return _matchParticipants[matchId].contains(user);
     }
 
-    function getEpochFees(uint epoch) external view returns (uint) {
+    function getEpochFees(uint256 epoch) external view returns (uint256) {
         return _epochFees[epoch];
     }
 
-    function getUserEarnings(address user) external view returns (uint) {
+    function getUserEarnings(address user) external view returns (uint256) {
         return _userEarnings[user];
     }
 
-    function getUserEpochFees(address user, uint epoch) external view returns (uint) {
+    function getUserEpochFees(address user, uint256 epoch) external view returns (uint256) {
         return _userEpochFees[user][epoch];
     }
 
-    function addExecutor(address executor) onlyOwner external {
+    function addExecutor(address executor) external onlyOwner {
         _executors.add(executor);
     }
-    function removeExecutor(address executor) onlyOwner external {
+
+    function removeExecutor(address executor) external onlyOwner {
         _executors.remove(executor);
     }
+
     function getExecutors() external view returns (address[] memory) {
         return _executors.values();
     }
-    function getExecutorAt(uint index) external view returns (address) {
+
+    function getExecutorAt(uint256 index) external view returns (address) {
         return _executors.at(index);
     }
-    function getNumExecutors() external view returns (uint) {
+
+    function getNumExecutors() external view returns (uint256) {
         return _executors.length();
     }
+
     function isExecutor(address executor) external view returns (bool) {
         return _executors.contains(executor);
     }
 
-    function claimFees(address to, uint quantity) external onlyClaimant {
+    function claimFees(address to, uint256 quantity) external onlyClaimant {
         ATLAS.transfer(to, quantity);
     }
-    function addClaimant(address claimant) onlyOwner external {
+
+    function addClaimant(address claimant) external onlyOwner {
         _claimants.add(claimant);
     }
-    function removeClaimant(address claimant) onlyOwner external {
+
+    function removeClaimant(address claimant) external onlyOwner {
         _claimants.remove(claimant);
     }
+
     function getClaimants() external view returns (address[] memory) {
         return _claimants.values();
     }
-    function getClaimantAt(uint index) external view returns (address) {
+
+    function getClaimantAt(uint256 index) external view returns (address) {
         return _claimants.at(index);
     }
-    function getNumClaimants() external view returns (uint) {
+
+    function getNumClaimants() external view returns (uint256) {
         return _claimants.length();
     }
+
     function isClaimant(address claimant) external view returns (bool) {
         return _claimants.contains(claimant);
     }

@@ -55,7 +55,7 @@ contract MockERC20 is IERC20 {
 }
 
 contract MockAction {
-    function onSend(address from, address to, address battleId, uint quantity, bytes calldata data) external {}
+    function onSend(address from, address to, address battleId, uint256 quantity, bytes calldata data) external {}
 }
 
 contract ShonaProxyTest is Test {
@@ -104,7 +104,7 @@ contract ShonaProxyTest is Test {
     function testPermissionlessSend() public {
         console.log("=== Testing Permissionless Send ===");
         console.log("Alice balance before:", mockToken.balanceOf(alice));
-        
+
         // Alice approves ATLAS once
         vm.startPrank(alice);
         console.log("Alice approving ATLAS...");
@@ -156,7 +156,7 @@ contract ShonaProxyTest is Test {
         address[] memory tos1 = new address[](2);
         address[] memory battleIds1 = new address[](2);
         address[] memory actions1 = new address[](2);
-        uint[] memory amounts1 = new uint[](2);
+        uint256[] memory amounts1 = new uint256[](2);
         bytes[] memory data1 = new bytes[](2);
 
         froms1[0] = alice;
@@ -179,7 +179,7 @@ contract ShonaProxyTest is Test {
         address[] memory tos2 = new address[](2);
         address[] memory battleIds2 = new address[](2);
         address[] memory actions2 = new address[](2);
-        uint[] memory amounts2 = new uint[](2);
+        uint256[] memory amounts2 = new uint256[](2);
         bytes[] memory data2 = new bytes[](2);
 
         froms2[0] = alice;
@@ -246,4 +246,4 @@ contract ShonaProxyTest is Test {
         console.log("New min fee:", proxy.getMinFee());
         assertEq(proxy.getMinFee(), 500);
     }
-} 
+}
