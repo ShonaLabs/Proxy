@@ -20,9 +20,11 @@ contract ShonaProxy is Ownable {
     uint256 private _maxFee = 10000; // $0.01
     uint256 private _minFee = 1000; // $0.001
 
-    IERC20 public constant ATLAS = IERC20(0x0b9F23645C9053BecD257f2De5FD961091112fb1);
+    IERC20 public immutable ATLAS;
 
-    constructor() Ownable(msg.sender) {}
+    constructor(IERC20 _atlas) Ownable(msg.sender) {
+        ATLAS = _atlas;
+    }
 
     modifier onlyClaimant() {
         require(_claimants.contains(msg.sender), "Only claimants");

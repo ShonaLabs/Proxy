@@ -67,8 +67,8 @@ contract ShonaProxyTest is Test {
     address public charlie = address(0x3);
 
     function setUp() public {
-        proxy = new ShonaProxy();
         mockToken = new MockERC20();
+        proxy = new ShonaProxy(IERC20(address(mockToken)));
         mockAction = new MockAction();
 
         // Mint tokens for testing
@@ -84,13 +84,6 @@ contract ShonaProxyTest is Test {
         // Add claimants
         proxy.addClaimant(address(this));
         proxy.addClaimant(alice);
-
-        // Mock ATLAS token
-        vm.mockCall(
-            address(0x0b9F23645C9053BecD257f2De5FD961091112fb1),
-            abi.encodeWithSelector(IERC20.transferFrom.selector),
-            abi.encode(true)
-        );
     }
 
     function testInitialState() public view {
@@ -103,7 +96,10 @@ contract ShonaProxyTest is Test {
 
     function testPermissionlessSend() public {
         console.log("=== Testing Permissionless Send ===");
-        console.log("Alice balance before:", mockToken.balanceOf(alice));
+        console.log("Initial balances:");
+        console.log("Alice:", mockToken.balanceOf(alice));
+        console.log("Bob:", mockToken.balanceOf(bob));
+        console.log("Charlie:", mockToken.balanceOf(charlie));
 
         // Alice approves ATLAS once
         vm.startPrank(alice);
@@ -112,24 +108,29 @@ contract ShonaProxyTest is Test {
         vm.stopPrank();
 
         // Multiple sends without needing to approve again
-        console.log("Sending first battle...");
-        bool success1 = proxy.send(alice, bob, address(0x123), address(0), 100 ether, "");
+        uint256 amount1 = 100 ether;
+        uint256 amount2 = 200 ether;
+        uint256 amount3 = 300 ether;
+
+        console.log("Transaction 1: Alice sends", amount1, "ATLAS to Bob");
+        bool success1 = proxy.send(alice, bob, address(0x123), address(0), amount1, "");
         assertTrue(success1);
-        console.log("First battle sent successfully");
+        console.log("Transaction 1 successful");
 
-        console.log("Sending second battle...");
-        bool success2 = proxy.send(alice, charlie, address(0x456), address(0), 200 ether, "");
+        console.log("Transaction 2: Alice sends", amount2, "ATLAS to Charlie");
+        bool success2 = proxy.send(alice, charlie, address(0x456), address(0), amount2, "");
         assertTrue(success2);
-        console.log("Second battle sent successfully");
+        console.log("Transaction 2 successful");
 
-        console.log("Sending third battle...");
-        bool success3 = proxy.send(alice, bob, address(0x789), address(0), 300 ether, "");
+        console.log("Transaction 3: Alice sends", amount3, "ATLAS to Bob");
+        bool success3 = proxy.send(alice, bob, address(0x789), address(0), amount3, "");
         assertTrue(success3);
-        console.log("Third battle sent successfully");
+        console.log("Transaction 3 successful");
 
-        console.log("Alice balance after:", mockToken.balanceOf(alice));
-        console.log("Bob balance:", mockToken.balanceOf(bob));
-        console.log("Charlie balance:", mockToken.balanceOf(charlie));
+        console.log("Final balances:");
+        console.log("Alice:", mockToken.balanceOf(alice));
+        console.log("Bob:", mockToken.balanceOf(bob));
+        console.log("Charlie:", mockToken.balanceOf(charlie));
     }
 
     function testPermissionlessBatchSend() public {
@@ -151,7 +152,6 @@ contract ShonaProxyTest is Test {
         vm.stopPrank();
 
         // First batch send
-        console.log("Executing first batch send...");
         address[] memory froms1 = new address[](2);
         address[] memory tos1 = new address[](2);
         address[] memory battleIds1 = new address[](2);
@@ -167,14 +167,18 @@ contract ShonaProxyTest is Test {
         battleIds1[1] = address(0x456);
         amounts1[0] = 100 ether;
         amounts1[1] = 200 ether;
+        data1[0] = "";
+        data1[1] = "";
 
+        console.log("Batch 1:");
+        console.log("Transaction 1: Alice sends", amounts1[0], "ATLAS to Bob");
+        console.log("Transaction 2: Bob sends", amounts1[1], "ATLAS to Charlie");
         bool[] memory success1 = proxy.batchSend(froms1, tos1, battleIds1, actions1, amounts1, data1);
         assertTrue(success1[0]);
         assertTrue(success1[1]);
-        console.log("First batch send successful");
+        console.log("Batch 1 successful");
 
         // Second batch send without needing to approve again
-        console.log("Executing second batch send...");
         address[] memory froms2 = new address[](2);
         address[] memory tos2 = new address[](2);
         address[] memory battleIds2 = new address[](2);
@@ -190,11 +194,16 @@ contract ShonaProxyTest is Test {
         battleIds2[1] = address(0xABC);
         amounts2[0] = 300 ether;
         amounts2[1] = 400 ether;
+        data2[0] = "";
+        data2[1] = "";
 
+        console.log("Batch 2:");
+        console.log("Transaction 1: Alice sends", amounts2[0], "ATLAS to Charlie");
+        console.log("Transaction 2: Bob sends", amounts2[1], "ATLAS to Alice");
         bool[] memory success2 = proxy.batchSend(froms2, tos2, battleIds2, actions2, amounts2, data2);
         assertTrue(success2[0]);
         assertTrue(success2[1]);
-        console.log("Second batch send successful");
+        console.log("Batch 2 successful");
 
         console.log("Final balances:");
         console.log("Alice:", mockToken.balanceOf(alice));
