@@ -17,8 +17,8 @@ contract ShonaProxy is Ownable {
     EnumerableSet.AddressSet private _executors;
     EnumerableSet.AddressSet private _claimants;
     uint256 private _feeRate = 1000; // 10%
-    uint256 private _maxFee = 10000; // $0.01
-    uint256 private _minFee = 1000; // $0.001
+    uint256 private _maxFee = 1000000000000000000000; // 1000 ATL
+    uint256 private _minFee = 1000000000000000000; // 1 ATL
 
     IERC20 public immutable ATLAS;
 
@@ -43,7 +43,8 @@ contract ShonaProxy is Ownable {
         address action,
         uint256 quantity,
         uint256 fee,
-        uint256 timestamp
+        uint256 timestamp,
+        string gameName
     );
 
     function batchSend(
@@ -52,27 +53,37 @@ contract ShonaProxy is Ownable {
         address[] calldata matchIds,
         address[] calldata actions,
         uint256[] calldata atlasAmounts,
-        bytes[] calldata data
+        bytes[] calldata data,
+        string[] calldata gameNames
     ) external onlyExecutor returns (bool[] memory) {
         bool[] memory success = new bool[](froms.length);
         for (uint256 i = 0; i < froms.length; i++) {
-            success[i] = _send(froms[i], tos[i], matchIds[i], actions[i], atlasAmounts[i], data[i]);
+            success[i] = _send(froms[i], tos[i], matchIds[i], actions[i], atlasAmounts[i], data[i], gameNames[i]);
         }
         return success;
     }
 
-    function send(address from, address to, address matchId, address action, uint256 atlasAmount, bytes calldata data)
-        external
-        onlyExecutor
-        returns (bool)
-    {
-        return _send(from, to, matchId, action, atlasAmount, data);
+    function send(
+        address from,
+        address to,
+        address matchId,
+        address action,
+        uint256 atlasAmount,
+        bytes calldata data,
+        string calldata gameName
+    ) external onlyExecutor returns (bool) {
+        return _send(from, to, matchId, action, atlasAmount, data, gameName);
     }
 
-    function _send(address from, address to, address matchId, address action, uint256 atlasAmount, bytes calldata data)
-        internal
-        returns (bool)
-    {
+    function _send(
+        address from,
+        address to,
+        address matchId,
+        address action,
+        uint256 atlasAmount,
+        bytes calldata data,
+        string calldata gameName
+    ) internal returns (bool) {
         bool isAction = action != address(0);
         uint256 atlasFee = atlasAmount * _feeRate / 10000;
         if (atlasFee > _maxFee) {
@@ -115,7 +126,7 @@ contract ShonaProxy is Ownable {
             }
         }
 
-        emit Send(from, to, matchId, action, atlasAmount, atlasFee, block.timestamp);
+        emit Send(from, to, matchId, action, atlasAmount, atlasFee, block.timestamp, gameName);
 
         return true;
     }

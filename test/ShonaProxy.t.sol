@@ -88,8 +88,8 @@ contract ShonaProxyTest is Test {
 
     function testInitialState() public view {
         assertEq(proxy.getFeeRate(), 1000);
-        assertEq(proxy.getMaxFee(), 10000);
-        assertEq(proxy.getMinFee(), 1000);
+        assertEq(proxy.getMaxFee(), 1000000000000000000000); // 1000 ATL
+        assertEq(proxy.getMinFee(), 1000000000000000000); // 1 ATL
         assertEq(proxy.getNumExecutors(), 3);
         assertEq(proxy.getNumClaimants(), 2);
     }
@@ -113,19 +113,22 @@ contract ShonaProxyTest is Test {
         uint256 amount3 = 300 ether;
 
         console.log("Transaction 1: Alice sends", amount1, "ATLAS to Bob");
-        bool success1 = proxy.send(alice, bob, address(0x123), address(0), amount1, "");
+        bool success1 = proxy.send(alice, bob, address(0x123), address(0), amount1, "", "Game1");
         assertTrue(success1);
-        console.log("Transaction 1 successful");
+        uint256 fee1 = amount1 * proxy.getFeeRate() / 10000;
+        console.log("Transaction 1 successful - Fee:", fee1, "ATL");
 
         console.log("Transaction 2: Alice sends", amount2, "ATLAS to Charlie");
-        bool success2 = proxy.send(alice, charlie, address(0x456), address(0), amount2, "");
+        bool success2 = proxy.send(alice, charlie, address(0x456), address(0), amount2, "", "Game2");
         assertTrue(success2);
-        console.log("Transaction 2 successful");
+        uint256 fee2 = amount2 * proxy.getFeeRate() / 10000;
+        console.log("Transaction 2 successful - Fee:", fee2, "ATL");
 
         console.log("Transaction 3: Alice sends", amount3, "ATLAS to Bob");
-        bool success3 = proxy.send(alice, bob, address(0x789), address(0), amount3, "");
+        bool success3 = proxy.send(alice, bob, address(0x789), address(0), amount3, "", "Game3");
         assertTrue(success3);
-        console.log("Transaction 3 successful");
+        uint256 fee3 = amount3 * proxy.getFeeRate() / 10000;
+        console.log("Transaction 3 successful - Fee:", fee3, "ATL");
 
         console.log("Final balances:");
         console.log("Alice:", mockToken.balanceOf(alice));
@@ -158,6 +161,7 @@ contract ShonaProxyTest is Test {
         address[] memory actions1 = new address[](2);
         uint256[] memory amounts1 = new uint256[](2);
         bytes[] memory data1 = new bytes[](2);
+        string[] memory gameNames1 = new string[](2);
 
         froms1[0] = alice;
         froms1[1] = bob;
@@ -169,14 +173,19 @@ contract ShonaProxyTest is Test {
         amounts1[1] = 200 ether;
         data1[0] = "";
         data1[1] = "";
+        gameNames1[0] = "Game1";
+        gameNames1[1] = "Game2";
 
         console.log("Batch 1:");
         console.log("Transaction 1: Alice sends", amounts1[0], "ATLAS to Bob");
         console.log("Transaction 2: Bob sends", amounts1[1], "ATLAS to Charlie");
-        bool[] memory success1 = proxy.batchSend(froms1, tos1, battleIds1, actions1, amounts1, data1);
+        bool[] memory success1 = proxy.batchSend(froms1, tos1, battleIds1, actions1, amounts1, data1, gameNames1);
         assertTrue(success1[0]);
         assertTrue(success1[1]);
-        console.log("Batch 1 successful");
+        uint256 fee1_1 = amounts1[0] * proxy.getFeeRate() / 10000;
+        uint256 fee1_2 = amounts1[1] * proxy.getFeeRate() / 10000;
+        console.log("Batch 1 successful - Fee 1:", fee1_1, "ATL");
+        console.log("Batch 1 successful - Fee 2:", fee1_2, "ATL");
 
         // Second batch send without needing to approve again
         address[] memory froms2 = new address[](2);
@@ -185,6 +194,7 @@ contract ShonaProxyTest is Test {
         address[] memory actions2 = new address[](2);
         uint256[] memory amounts2 = new uint256[](2);
         bytes[] memory data2 = new bytes[](2);
+        string[] memory gameNames2 = new string[](2);
 
         froms2[0] = alice;
         froms2[1] = bob;
@@ -196,14 +206,19 @@ contract ShonaProxyTest is Test {
         amounts2[1] = 400 ether;
         data2[0] = "";
         data2[1] = "";
+        gameNames2[0] = "Game3";
+        gameNames2[1] = "Game4";
 
         console.log("Batch 2:");
         console.log("Transaction 1: Alice sends", amounts2[0], "ATLAS to Charlie");
         console.log("Transaction 2: Bob sends", amounts2[1], "ATLAS to Alice");
-        bool[] memory success2 = proxy.batchSend(froms2, tos2, battleIds2, actions2, amounts2, data2);
+        bool[] memory success2 = proxy.batchSend(froms2, tos2, battleIds2, actions2, amounts2, data2, gameNames2);
         assertTrue(success2[0]);
         assertTrue(success2[1]);
-        console.log("Batch 2 successful");
+        uint256 fee2_1 = amounts2[0] * proxy.getFeeRate() / 10000;
+        uint256 fee2_2 = amounts2[1] * proxy.getFeeRate() / 10000;
+        console.log("Batch 2 successful - Fee 1:", fee2_1, "ATL");
+        console.log("Batch 2 successful - Fee 2:", fee2_2, "ATL");
 
         console.log("Final balances:");
         console.log("Alice:", mockToken.balanceOf(alice));
@@ -217,7 +232,7 @@ contract ShonaProxyTest is Test {
         console.log("Charlie (non-executor) attempting to send...");
         mockToken.approve(address(proxy), type(uint256).max);
         vm.expectRevert("Only executors");
-        proxy.send(charlie, alice, address(0x123), address(0), 100 ether, "");
+        proxy.send(charlie, alice, address(0x123), address(0), 100 ether, "", "Game1");
         vm.stopPrank();
         console.log("Test passed: Non-executor cannot send");
     }
@@ -243,16 +258,16 @@ contract ShonaProxyTest is Test {
     function testOwnerCanUpdateMaxFee() public {
         console.log("=== Testing Max Fee Update ===");
         console.log("Current max fee:", proxy.getMaxFee());
-        proxy.setMaxFee(20000);
+        proxy.setMaxFee(2000000000000000000000); // 2000 ATL
         console.log("New max fee:", proxy.getMaxFee());
-        assertEq(proxy.getMaxFee(), 20000);
+        assertEq(proxy.getMaxFee(), 2000000000000000000000);
     }
 
     function testOwnerCanUpdateMinFee() public {
         console.log("=== Testing Min Fee Update ===");
         console.log("Current min fee:", proxy.getMinFee());
-        proxy.setMinFee(500);
+        proxy.setMinFee(500000000000000000); // 0.5 ATL
         console.log("New min fee:", proxy.getMinFee());
-        assertEq(proxy.getMinFee(), 500);
+        assertEq(proxy.getMinFee(), 500000000000000000);
     }
 }
