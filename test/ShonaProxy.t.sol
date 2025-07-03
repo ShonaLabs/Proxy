@@ -87,7 +87,7 @@ contract ShonaProxyTest is Test {
     }
 
     function testInitialState() public view {
-        assertEq(proxy.getFeeRate(), 1000);
+        assertEq(proxy.getFeeRate(), 10); // Updated to 0.1%
         assertEq(proxy.getMaxFee(), 1000000000000000000000); // 1000 ATL
         assertEq(proxy.getMinFee(), 1000000000000000000); // 1 ATL
         assertEq(proxy.getNumExecutors(), 3);

@@ -16,14 +16,56 @@ contract ShonaProxy is Ownable {
     EnumerableSet.AddressSet private _players;
     EnumerableSet.AddressSet private _executors;
     EnumerableSet.AddressSet private _claimants;
-    uint256 private _feeRate = 1000; // 10%
+    uint256 private _feeRate = 10; // 0.1% (changed from 1000)
     uint256 private _maxFee = 1000000000000000000000; // 1000 ATL
     uint256 private _minFee = 1000000000000000000; // 1 ATL
 
     IERC20 public immutable ATLAS;
+    
+    // Stable token configurations for Base network
+    IERC20 public constant USDC = IERC20(0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913); // Base USDC
+    IERC20 public constant IDRX = IERC20(0x18Bc5bcC660cf2B9cE3cd51a404aFe1a0cBD3C22); // IDRX address as requested
+    
+    // nga stable token configuration
+    mapping(address => bool) public stableTokens;
+    mapping(string => address) public tokenSymbols;
+    
+    event StableTokenAdded(string symbol, address token);
+    event StableTokenRemoved(string symbol, address token);
 
     constructor(IERC20 _atlas) Ownable(msg.sender) {
         ATLAS = _atlas;
+        
+        // Initialize stable tokens
+        _addStableToken("USDC", address(USDC));
+        _addStableToken("IDRX", address(IDRX));
+        _addStableToken("nga", address(ATLAS)); // Using nga as stable token on Base
+    }
+    
+    function _addStableToken(string memory symbol, address token) internal {
+        stableTokens[token] = true;
+        tokenSymbols[symbol] = token;
+        emit StableTokenAdded(symbol, token);
+    }
+    
+    function addStableToken(string memory symbol, address token) external onlyOwner {
+        _addStableToken(symbol, token);
+    }
+    
+    function removeStableToken(string memory symbol) external onlyOwner {
+        address token = tokenSymbols[symbol];
+        require(token != address(0), "Token not found");
+        stableTokens[token] = false;
+        delete tokenSymbols[symbol];
+        emit StableTokenRemoved(symbol, token);
+    }
+    
+    function isStableToken(address token) external view returns (bool) {
+        return stableTokens[token];
+    }
+    
+    function getTokenAddress(string memory symbol) external view returns (address) {
+        return tokenSymbols[symbol];
     }
 
     modifier onlyClaimant() {
@@ -165,6 +207,11 @@ contract ShonaProxy is Ownable {
     function setFeeRate(uint256 feeRate) external onlyOwner {
         require(feeRate <= 2000, "Fee must be <= 20%");
         _feeRate = feeRate;
+    }
+    
+    // Function to set fixed fee rate to 0.1% for stable tokens
+    function setStableFeeRate() external onlyOwner {
+        _feeRate = 10; // 0.1% fixed rate for stable tokens
     }
 
     function setMaxFee(uint256 maxFee) external onlyOwner {
