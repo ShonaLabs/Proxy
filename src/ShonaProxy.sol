@@ -36,10 +36,10 @@ contract ShonaProxy is Ownable {
     constructor(IERC20 _atlas) Ownable(msg.sender) {
         ATLAS = _atlas;
         
-        // Initialize stable tokens
+        // Initialize stable tokens on Base network
         _addStableToken("USDC", address(USDC));
         _addStableToken("IDRX", address(IDRX));
-        _addStableToken("nga", address(ATLAS)); // Using nga as stable token on Base
+        // nga will be added separately with its own contract address
     }
     
     function _addStableToken(string memory symbol, address token) internal {
@@ -212,6 +212,11 @@ contract ShonaProxy is Ownable {
     // Function to set fixed fee rate to 0.1% for stable tokens
     function setStableFeeRate() external onlyOwner {
         _feeRate = 10; // 0.1% fixed rate for stable tokens
+    }
+    
+    // Function to add nga token specifically
+    function addNgaToken(address ngaTokenAddress) external onlyOwner {
+        _addStableToken("nga", ngaTokenAddress);
     }
 
     function setMaxFee(uint256 maxFee) external onlyOwner {
