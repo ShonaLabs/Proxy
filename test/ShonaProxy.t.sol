@@ -88,8 +88,6 @@ contract ShonaProxyTest is Test {
 
     function testInitialState() public view {
         assertEq(proxy.getFeeRate(), 10); // Updated to 0.1%
-        assertEq(proxy.getMaxFee(), 1000000000000000000000); // 1000 ATL
-        assertEq(proxy.getMinFee(), 1000000000000000000); // 1 ATL
         assertEq(proxy.getNumExecutors(), 3);
         assertEq(proxy.getNumClaimants(), 2);
     }
@@ -255,19 +253,5 @@ contract ShonaProxyTest is Test {
         assertEq(proxy.getFeeRate(), 2000);
     }
 
-    function testOwnerCanUpdateMaxFee() public {
-        console.log("=== Testing Max Fee Update ===");
-        console.log("Current max fee:", proxy.getMaxFee());
-        proxy.setMaxFee(2000000000000000000000); // 2000 ATL
-        console.log("New max fee:", proxy.getMaxFee());
-        assertEq(proxy.getMaxFee(), 2000000000000000000000);
-    }
 
-    function testOwnerCanUpdateMinFee() public {
-        console.log("=== Testing Min Fee Update ===");
-        console.log("Current min fee:", proxy.getMinFee());
-        proxy.setMinFee(500000000000000000); // 0.5 ATL
-        console.log("New min fee:", proxy.getMinFee());
-        assertEq(proxy.getMinFee(), 500000000000000000);
-    }
 }

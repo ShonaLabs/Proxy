@@ -16,9 +16,7 @@ contract ShonaProxy is Ownable {
     EnumerableSet.AddressSet private _players;
     EnumerableSet.AddressSet private _executors;
     EnumerableSet.AddressSet private _claimants;
-    uint256 private _feeRate = 10; // 0.1% (changed from 1000)
-    uint256 private _maxFee = 1000000000000000000000; // 1000 ATL
-    uint256 private _minFee = 1000000000000000000; // 1 ATL
+    uint256 private _feeRate = 10; // 0.1% fixed rate
 
     IERC20 public immutable ATLAS;
     
@@ -126,13 +124,7 @@ contract ShonaProxy is Ownable {
         string calldata gameName
     ) internal returns (bool) {
         bool isAction = action != address(0);
-        uint256 atlasFee = atlasAmount * _feeRate / 10000;
-        if (atlasFee > _maxFee) {
-            atlasFee = _maxFee;
-        }
-        if (atlasFee < _minFee) {
-            atlasFee = _minFee;
-        }
+        uint256 atlasFee = atlasAmount * _feeRate / 10000; // Fixed 0.1% fee
 
         // Only process the send for the first time
         if (_matchParticipants[matchId].contains(from)) {
@@ -173,14 +165,7 @@ contract ShonaProxy is Ownable {
     }
 
     function _calculateFee(uint256 atlasAmount) internal view returns (uint256) {
-        uint256 atlasFee = atlasAmount * _feeRate / 10000;
-        if (atlasFee > _maxFee) {
-            atlasFee = _maxFee;
-        }
-        if (atlasFee < _minFee) {
-            atlasFee = _minFee;
-        }
-        return atlasFee;
+        return atlasAmount * _feeRate / 10000; // Fixed 0.1% fee
     }
 
     function getEpoch(uint256 timestamp) public pure returns (uint256) {
@@ -195,14 +180,6 @@ contract ShonaProxy is Ownable {
         return _feeRate;
     }
 
-    function getMaxFee() external view returns (uint256) {
-        return _maxFee;
-    }
-
-    function getMinFee() external view returns (uint256) {
-        return _minFee;
-    }
-
     function setFeeRate(uint256 feeRate) external onlyOwner {
         require(feeRate <= 2000, "Fee must be <= 20%");
         _feeRate = feeRate;
@@ -211,16 +188,6 @@ contract ShonaProxy is Ownable {
     // Function to set fixed fee rate to 0.1% for stable tokens
     function setStableFeeRate() external onlyOwner {
         _feeRate = 10; // 0.1% fixed rate for stable tokens
-    }
-
-    function setMaxFee(uint256 maxFee) external onlyOwner {
-        require(maxFee >= _minFee, "Max fee must equal or exceed min fee");
-        _maxFee = maxFee;
-    }
-
-    function setMinFee(uint256 minFee) external onlyOwner {
-        require(minFee <= _maxFee, "Min fee can not exceed max fee");
-        _minFee = minFee;
     }
 
     function getPlayers() external view returns (address[] memory) {
