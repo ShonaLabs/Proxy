@@ -18,22 +18,18 @@ contract ShonaProxy is Ownable {
     EnumerableSet.AddressSet private _claimants;
     uint256 private _feeRate = 10; // 0.1% fixed rate
 
-    IERC20 public immutable ATLAS;
-    
     // Stable token configurations for Base network
     IERC20 public constant USDC = IERC20(0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913); // Base USDC
     IERC20 public constant IDRX = IERC20(0x18Bc5bcC660cf2B9cE3cd51a404aFe1a0cBD3C22); // IDRX address as requested
     
-    // nga stable token configuration
+    // stable token configuration
     mapping(address => bool) public stableTokens;
     mapping(string => address) public tokenSymbols;
     
     event StableTokenAdded(string symbol, address token);
     event StableTokenRemoved(string symbol, address token);
 
-    constructor(IERC20 _atlas) Ownable(msg.sender) {
-        ATLAS = _atlas;
-        
+    constructor() Ownable(msg.sender) {
         // Initialize stable tokens on Base network - only USDC and IDRX
         _addStableToken("USDC", address(USDC));
         _addStableToken("IDRX", address(IDRX));
@@ -80,6 +76,7 @@ contract ShonaProxy is Ownable {
         address indexed to,
         address indexed matchId,
         address action,
+        address token,
         uint256 quantity,
         uint256 fee,
         uint256 timestamp,
@@ -91,13 +88,14 @@ contract ShonaProxy is Ownable {
         address[] calldata tos,
         address[] calldata matchIds,
         address[] calldata actions,
-        uint256[] calldata atlasAmounts,
+        address[] calldata tokens,
+        uint256[] calldata amounts,
         bytes[] calldata data,
         string[] calldata gameNames
     ) external onlyExecutor returns (bool[] memory) {
         bool[] memory success = new bool[](froms.length);
         for (uint256 i = 0; i < froms.length; i++) {
-            success[i] = _send(froms[i], tos[i], matchIds[i], actions[i], atlasAmounts[i], data[i], gameNames[i]);
+            success[i] = _send(froms[i], tos[i], matchIds[i], actions[i], tokens[i], amounts[i], data[i], gameNames[i]);
         }
         return success;
     }
@@ -107,11 +105,12 @@ contract ShonaProxy is Ownable {
         address to,
         address matchId,
         address action,
-        uint256 atlasAmount,
+        address token,
+        uint256 amount,
         bytes calldata data,
         string calldata gameName
     ) external onlyExecutor returns (bool) {
-        return _send(from, to, matchId, action, atlasAmount, data, gameName);
+        return _send(from, to, matchId, action, token, amount, data, gameName);
     }
 
     function _send(
